@@ -2,15 +2,17 @@
 # See: https://render.com/docs/blueprint-spec
 
 services:
-  # Backend Web Service
+  # Backend Web Service (serves both API and frontend)
   - type: web
     name: job-hunt-dashboard
     runtime: node
     plan: free
     branch: master
-    rootDir: backend
-    buildCommand: npm install
-    startCommand: npm start
+    # Build both frontend and backend
+    buildCommand: |
+      cd frontend && npm install && npm run build && \
+      cd ../backend && npm install
+    startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -29,19 +31,9 @@ services:
     healthCheckPath: /health
     autoDeploy: true
 
-  # Frontend Static Site (optional - can also serve from backend)
-  # Uncomment if you want separate frontend hosting
-  # - type: static
-  #   name: job-hunt-frontend
-  #   buildCommand: cd frontend && npm install && npm run build
-  #   publishPath: frontend/dist
-  #   envVars:
-  #     - key: NEXT_PUBLIC_API_URL
-  #       value: https://job-hunt-dashboard.onrender.com
-
 databases:
   - name: job-hunt-db
     databaseName: jobhunt
     user: jobhunt
     plan: free
-    ipAllowList: []  # Allow all (Render handles this internally)
+    ipAllowList: []

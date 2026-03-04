@@ -47,16 +47,13 @@ app.get('/health', (req, res) => {
 
 // Serve frontend in production
 if (isProduction) {
-  const frontendPath = join(__dirname, '../../frontend/.next/standalone');
-  const publicPath = join(__dirname, '../../frontend/public');
-  const staticPath = join(__dirname, '../../frontend/.next/static');
+  const staticPath = join(__dirname, '../../frontend/dist');
   
-  app.use('/public', express.static(publicPath));
-  app.use('/_next/static', express.static(staticPath));
+  app.use(express.static(staticPath));
   
-  // Serve Next.js pages
+  // Serve index.html for all non-API routes (SPA fallback)
   app.get('*', (req, res) => {
-    res.sendFile(join(frontendPath, 'index.html'));
+    res.sendFile(join(staticPath, 'index.html'));
   });
 }
 
