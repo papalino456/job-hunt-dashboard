@@ -9,13 +9,18 @@ services:
     plan: free
     branch: master
     # Build both frontend and backend with correct env vars
+    # Memory-optimized for free tier (512MB RAM)
     buildCommand: |
+      export NODE_OPTIONS="--max-old-space-size=409" && \
       export NEXT_PUBLIC_API_URL="" && \
       cd frontend && rm -rf .next dist node_modules package-lock.json && \
-      npm install && npm run build && \
-      cd ../backend && npm install
+      npm ci --production=false --no-audit && \
+      npm run build && \
+      cd ../backend && npm ci --production --no-audit
     startCommand: cd backend && npm start
     envVars:
+      - key: NODE_VERSION
+        value: 18.20.0
       - key: NODE_ENV
         value: production
       - key: PORT
