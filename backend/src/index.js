@@ -52,7 +52,7 @@ app.use(session({
   cookie: {
     secure: isProduction,  // HTTPS only in production
     httpOnly: true,
-    sameSite: isProduction ? 'none' : 'lax', // Required for cross-origin cookies
+    sameSite: 'lax',  // Works for same-origin
     maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
   }
 }));
