@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Use relative URL in production (same origin), localhost in dev
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 export interface Job {
   id: string;
