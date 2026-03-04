@@ -1,29 +1,31 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 
 export default function Home() {
-  const router = useRouter();
-  
   useEffect(() => {
     api.checkAuth()
       .then(({ authenticated }) => {
         if (authenticated) {
-          router.push('/dashboard');
+          window.location.href = '/dashboard';
         } else {
-          router.push('/login');
+          window.location.href = '/login';
         }
       })
       .catch(() => {
-        router.push('/login');
+        window.location.href = '/login';
       });
-  }, [router]);
+  }, []);
   
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-steel-400 font-mono">Loading...</div>
+    <div className="flex items-center justify-center min-h-screen bg-steel-950">
+      <div className="flex items-center gap-3">
+        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse delay-75" />
+        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse delay-150" />
+        <span className="text-steel-400 font-mono text-sm ml-2">Loading...</span>
+      </div>
     </div>
   );
 }

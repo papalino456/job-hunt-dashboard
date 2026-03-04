@@ -32,12 +32,12 @@ export default function DashboardPage() {
     try {
       const { authenticated } = await api.checkAuth();
       if (!authenticated) {
-        router.push('/login');
+        window.location.href = '/login';
         return;
       }
       await loadJobs();
     } catch (error) {
-      router.push('/login');
+      window.location.href = '/login';
     }
   };
   
@@ -85,7 +85,7 @@ export default function DashboardPage() {
   const handleLogout = async () => {
     try {
       await api.logout();
-      router.push('/login');
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout failed:', error);
     }
