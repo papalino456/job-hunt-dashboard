@@ -7,15 +7,15 @@ A password-protected job application tracking system with a clean, Industrial Mi
 - 📊 **Pipeline Board**: Kanban-style workflow (Discovered → Offer/Rejected)
 - 🔒 **Password Protected**: Simple auth, no user database needed
 - 🎨 **Industrial Minimalist**: Steel & Silicon design matching your portfolio
-- 💾 **SQLite Backend**: Persistent, file-based database
-- 🚀 **Deploy to Fly.io**: Free tier compatible
+- 💾 **PostgreSQL Database**: Persistent external database (free tier on Render)
+- 🚀 **Deploy to Render.com**: Free tier with auto-deploy
 
 ## Tech Stack
 
 - **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
-- **Backend**: Express.js + SQLite (better-sqlite3)
+- **Backend**: Express.js + PostgreSQL (pg driver)
 - **Auth**: Session-based with httpOnly cookies
-- **Deployment**: Fly.io (with persistent volume for database)
+- **Deployment**: Render.com (Web Service + PostgreSQL)
 
 ## Local Development
 
@@ -23,117 +23,104 @@ A password-protected job application tracking system with a clean, Industrial Mi
 
 - Node.js 18+ and npm
 - Git
+- PostgreSQL (optional - can use SQLite locally)
 
-### Setup
-
-1. **Install dependencies:**
-
-```bash
-# Backend
-cd backend
-npm install
-cp .env.example .env
-# Edit .env and set your PASSWORD
-
-# Frontend
-cd ../frontend
-npm install
-```
-
-2. **Start backend:**
+### Quick Setup
 
 ```bash
-cd backend
-npm run dev
-# Runs on http://localhost:3001
+# Install all dependencies
+npm run install:all
+
+# Setup environment
+cp backend/.env.example backend/.env
+# Edit backend/.env with your settings
+
+# Start development servers
+npm run dev         # Backend on http://localhost:3001
+npm run dev:frontend # Frontend on http://localhost:3000
 ```
 
-3. **Start frontend:**
+### Database Options
 
+#### Option 1: Local PostgreSQL (Docker)
 ```bash
-cd frontend
-npm run dev
-# Runs on http://localhost:3000
+docker run -d \
+  --name job-hunt-postgres \
+  -e POSTGRES_USER=jobhunt \
+  -e POSTGRES_PASSWORD=localdev \
+  -e POSTGRES_DB=jobhunt \
+  -p 5432:5432 \
+  postgres:15
+
+export DATABASE_URL="postgresql://jobhunt:localdev@localhost:5432/jobhunt"
 ```
 
-4. **Visit http://localhost:3000** and login with your password
+#### Option 2: SQLite (Original - no setup needed)
+Edit `backend/src/index.js`:
+```javascript
+// Change this:
+import './db/database-postgres.js';
+// To this:
+import './db/database.js';
+```
 
 ## Environment Variables
 
 ### Backend (.env)
 
-```
-PORT=3001
-PASSWORD=your-secure-password-here
-SESSION_SECRET=generate-a-long-random-string-here
-DATABASE_PATH=./data/jobs.db
+```env
+# Required for production
+DATABASE_URL=postgresql://user:pass@host:5432/db
+PASSWORD=your-secure-password
+SESSION_SECRET=random-string-32-chars
+
+# Optional
 NODE_ENV=development
+PORT=3001
+FRONTEND_URL=http://localhost:3000
 ```
 
 ### Frontend (.env.local)
 
-```
+```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
-## Deployment to Fly.io
+## Deployment to Render.com
 
-### 1. Install Fly CLI
+### Quick Deploy (Blueprint)
 
+1. **Push to GitHub:**
 ```bash
-curl -L https://fly.io/install.sh | sh
+git add .
+git commit -m "Ready for Render deployment"
+git push origin main
 ```
 
-### 2. Login
+2. **Deploy via Blueprint:**
+   - Go to [Render Dashboard](https://dashboard.render.com)
+   - Click **"New +"** → **"Blueprint"**
+   - Connect your GitHub repository
+   - Render auto-creates PostgreSQL + Web Service
+
+3. **Set Password:**
+   - Web Service → **Environment** → Add `PASSWORD`
+
+Your app will be live at `https://job-hunt-dashboard.onrender.com`
+
+### Manual Deploy
+
+See [DEPLOYMENT_RENDER.md](./DEPLOYMENT_RENDER.md) for detailed instructions.
+
+## Database Migration
+
+If you have existing SQLite data to migrate:
 
 ```bash
-fly auth login
-```
-
-### 3. Create app
-
-```bash
-fly apps create job-hunt-dashboard
-```
-
-### 4. Set secrets
-
-```bash
-fly secrets set PASSWORD="your-password-here"
-fly secrets set SESSION_SECRET="$(openssl rand -hex 32)"
-```
-
-### 5. Create persistent volume
-
-```bash
-fly volumes create job_hunt_data --size 1 --region sjc
-```
-
-### 6. Deploy
-
-```bash
-fly deploy
-```
-
-### 7. Access your dashboard
-
-```bash
-fly open
-```
-
-## Database Management
-
-The SQLite database is stored in `backend/data/jobs.db` (local) or on a Fly.io volume (production).
-
-### Backup database (production)
-
-```bash
-fly ssh console
-cd /app/backend/data
-cat jobs.db | base64 > /tmp/backup.b64
-exit
-
-fly ssh console -C "cat /tmp/backup.b64" | base64 -d > backup.db
+# Get your Render PostgreSQL URL from Dashboard
+cd backend
+export DATABASE_URL="postgresql://..."
+npm run migrate
 ```
 
 ## API Endpoints
@@ -185,15 +172,29 @@ interface Job {
   research_status: 'pending' | 'in_progress' | 'complete';
   source: 'manual' | 'heartbeat' | 'discovered';
   tags: string[];
+  
+  created_at: string;
+  updated_at: string;
 }
 ```
 
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start backend dev server |
+| `npm run dev:frontend` | Start frontend dev server |
+| `npm run start` | Start production backend |
+| `npm run migrate` | Migrate SQLite → PostgreSQL |
+| `npm run install:all` | Install all dependencies |
+
 ## Next Steps
 
-1. Create the `job-hunter` skill for CLI integration
-2. Add timeline view for deadline visualization
-3. Build stats dashboard
-4. Implement email/LinkedIn integration (optional)
+1. ✅ Deploy to Render.com
+2. Configure custom domain (optional)
+3. Create the `job-hunter` skill for CLI integration
+4. Add timeline view for deadline visualization
+5. Build stats dashboard
 
 ## Design Notes
 
@@ -204,3 +205,13 @@ The dashboard uses the same "Industrial Minimalist" aesthetic as your portfolio:
 - Sparse blue highlights
 - Red for urgency (<7d deadlines)
 - Dark mode default
+
+## Free Tier Limits (Render)
+
+- **Web Service**: 512 MB RAM, spins down after 15 min idle (cold start ~30s)
+- **PostgreSQL**: 1 GB storage, paused after 90 days inactivity (data preserved)
+- **Cost**: $0/month
+
+---
+
+**Previous Deployment**: Fly.io instructions are preserved in [DEPLOYMENT.md](./DEPLOYMENT.md) for reference.

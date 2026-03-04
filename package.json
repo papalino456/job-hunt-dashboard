@@ -1,13 +1,16 @@
 {
   "name": "job-hunt-dashboard",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Job hunt dashboard deployed on Render with PostgreSQL",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "migrate": "cd backend && npm run migrate",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install"
   },
-  "keywords": [],
+  "keywords": ["job-hunt", "dashboard", "render", "postgresql"],
   "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  "license": "ISC"
 }

@@ -1,6 +1,6 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../db/database.js';
+import db from '../db/database-postgres.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -8,32 +8,58 @@ const router = express.Router();
 // All routes require authentication
 router.use(requireAuth);
 
+// Build WHERE clause with parameter indexing for PostgreSQL
+function buildWhereClause(conditions) {
+  const clauses = [];
+  const params = [];
+  let idx = 1;
+  
+  for (const [field, value] of Object.entries(conditions)) {
+    if (value !== undefined && value !== null) {
+      if (field === 'search') {
+        clauses.push(`(company ILIKE $${idx} OR role ILIKE $${idx})`);
+        params.push(`%${value}%`);
+      } else {
+        clauses.push(`${field} = $${idx}`);
+        params.push(value);
+      }
+      idx++;
+    }
+  }
+  
+  return { clauses, params, nextIndex: idx };
+}
+
 // Get all jobs with optional filters
 router.get('/', async (req, res) => {
   const { status, priority, search } = req.query;
   
   let query = 'SELECT * FROM jobs WHERE 1=1';
   const params = [];
+  let idx = 1;
   
   if (status) {
-    query += ' AND status = ?';
+    query += ` AND status = $${idx}`;
     params.push(status);
+    idx++;
   }
   
   if (priority) {
-    query += ' AND priority = ?';
+    query += ` AND priority = $${idx}`;
     params.push(priority);
+    idx++;
   }
   
   if (search) {
-    query += ' AND (company LIKE ? OR role LIKE ?)';
-    params.push(`%${search}%`, `%${search}%`);
+    query += ` AND (company ILIKE $${idx} OR role ILIKE $${idx})`;
+    params.push(`%${search}%`);
+    idx++;
   }
   
   query += ' ORDER BY created_at DESC';
   
   try {
-    const jobs = await db.allAsync(query, params);
+    const jobs = await db.all(query, params);
     
     // Parse tags JSON
     jobs.forEach(job => {
@@ -42,6 +68,7 @@ router.get('/', async (req, res) => {
     
     res.json(jobs);
   } catch (error) {
+    console.error('Error fetching jobs:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -49,7 +76,7 @@ router.get('/', async (req, res) => {
 // Get single job
 router.get('/:id', async (req, res) => {
   try {
-    const job = await db.getAsync('SELECT * FROM jobs WHERE id = ?', req.params.id);
+    const job = await db.get('SELECT * FROM jobs WHERE id = $1', [req.params.id]);
     
     if (!job) {
       return res.status(404).json({ error: 'Job not found' });
@@ -58,6 +85,7 @@ router.get('/:id', async (req, res) => {
     job.tags = JSON.parse(job.tags || '[]');
     res.json(job);
   } catch (error) {
+    console.error('Error fetching job:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -95,14 +123,14 @@ router.post('/', async (req, res) => {
   const id = uuidv4();
   
   try {
-    await db.runAsync(`
+    await db.run(`
       INSERT INTO jobs (
         id, company, role, location, posting_url, date_discovered,
         salary_range, team_info, hiring_manager, referral_contact,
         status, priority, deadline,
         cv_version, date_applied, last_contact, notes,
         research_status, source, tags
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
     `, [
       id, company, role, location, posting_url, date_discovered,
       salary_range, team_info, hiring_manager, referral_contact,
@@ -113,6 +141,7 @@ router.post('/', async (req, res) => {
     
     res.status(201).json({ id, ...req.body, tags });
   } catch (error) {
+    console.error('Error creating job:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -121,6 +150,7 @@ router.post('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   const updates = [];
   const params = [];
+  let idx = 1;
   
   const allowedFields = [
     'company', 'role', 'location', 'posting_url', 'date_discovered',
@@ -132,10 +162,11 @@ router.patch('/:id', async (req, res) => {
   
   allowedFields.forEach(field => {
     if (req.body[field] !== undefined) {
-      updates.push(`${field} = ?`);
+      updates.push(`${field} = $${idx}`);
       params.push(
         field === 'tags' ? JSON.stringify(req.body[field]) : req.body[field]
       );
+      idx++;
     }
   });
   
@@ -143,22 +174,23 @@ router.patch('/:id', async (req, res) => {
     return res.status(400).json({ error: 'No fields to update' });
   }
   
-  updates.push('updated_at = datetime("now")');
+  updates.push(`updated_at = CURRENT_TIMESTAMP`);
   params.push(req.params.id);
   
   try {
-    const result = await db.runAsync(`
+    const result = await db.run(`
       UPDATE jobs 
       SET ${updates.join(', ')} 
-      WHERE id = ?
+      WHERE id = $${idx}
     `, params);
     
-    if (result.changes === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Job not found' });
     }
     
     res.json({ success: true });
   } catch (error) {
+    console.error('Error updating job:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -166,14 +198,15 @@ router.patch('/:id', async (req, res) => {
 // Delete job
 router.delete('/:id', async (req, res) => {
   try {
-    const result = await db.runAsync('DELETE FROM jobs WHERE id = ?', req.params.id);
+    const result = await db.run('DELETE FROM jobs WHERE id = $1', [req.params.id]);
     
-    if (result.changes === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Job not found' });
     }
     
     res.json({ success: true });
   } catch (error) {
+    console.error('Error deleting job:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -181,30 +214,31 @@ router.delete('/:id', async (req, res) => {
 // Get stats
 router.get('/api/stats', async (req, res) => {
   try {
-    const statsByStatus = await db.allAsync(`
+    const statsByStatus = await db.all(`
       SELECT status, COUNT(*) as count 
       FROM jobs 
       GROUP BY status
     `);
     
-    const statsByPriority = await db.allAsync(`
+    const statsByPriority = await db.all(`
       SELECT priority, COUNT(*) as count 
       FROM jobs 
       GROUP BY priority
     `);
     
-    const recent = await db.getAsync(`
+    const recent = await db.get(`
       SELECT COUNT(*) as count 
       FROM jobs 
-      WHERE date_discovered >= date('now', '-7 days')
+      WHERE date_discovered >= CURRENT_DATE - INTERVAL '7 days'
     `);
     
     res.json({
       byStatus: statsByStatus,
       byPriority: statsByPriority,
-      recentApplications: recent.count
+      recentApplications: parseInt(recent.count)
     });
   } catch (error) {
+    console.error('Error fetching stats:', error);
     res.status(500).json({ error: error.message });
   }
 });

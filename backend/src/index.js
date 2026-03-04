@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import authRoutes from './routes/auth.js';
 import jobRoutes from './routes/jobs.js';
+import './db/database-postgres.js'; // Initialize PostgreSQL connection
 
 dotenv.config();
 
@@ -41,7 +42,7 @@ app.use('/api/jobs', jobRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', database: 'postgresql' });
 });
 
 // Serve frontend in production
@@ -61,6 +62,7 @@ if (isProduction) {
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend running on http://localhost:${PORT}`);
+  console.log(`🐘 Using PostgreSQL database`);
   if (isProduction) {
     console.log(`📦 Serving frontend static files`);
   }
