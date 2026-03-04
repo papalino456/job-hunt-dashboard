@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { existsSync } from 'fs';
 import authRoutes from './routes/auth.js';
 import jobRoutes from './routes/jobs.js';
 import './db/database-postgres.js'; // Initialize PostgreSQL connection
@@ -70,9 +71,24 @@ app.get('/health', (req, res) => {
 if (isProduction) {
   const staticPath = join(__dirname, '../../frontend/dist');
   
+  // Serve static files
   app.use(express.static(staticPath));
   
-  // Serve index.html for all non-API routes (SPA fallback)
+  // Serve route-specific HTML files
+  app.get('/login', (req, res) => {
+    res.sendFile(join(staticPath, 'login.html'));
+  });
+  
+  app.get('/dashboard', (req, res) => {
+    res.sendFile(join(staticPath, 'dashboard.html'));
+  });
+  
+  // Serve index.html for root and other routes
+  app.get('/', (req, res) => {
+    res.sendFile(join(staticPath, 'index.html'));
+  });
+  
+  // Fallback for client-side routing
   app.get('*', (req, res) => {
     res.sendFile(join(staticPath, 'index.html'));
   });
