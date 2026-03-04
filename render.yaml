@@ -7,7 +7,7 @@ services:
     name: job-hunt-dashboard
     runtime: node
     plan: free
-    branch: main
+    branch: master
     rootDir: backend
     buildCommand: npm install
     startCommand: npm start
