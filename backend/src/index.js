@@ -49,11 +49,11 @@ app.use(express.json());
 app.use(session({
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,  // Changed to true to always create session
   cookie: {
     secure: isProduction,  // HTTPS only in production
     httpOnly: true,
-    sameSite: 'lax',  // Works for same-origin
+    sameSite: 'lax',
     maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
   }
 }));
