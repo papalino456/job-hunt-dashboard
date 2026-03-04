@@ -67,7 +67,12 @@ app.use('/api/jobs', jobRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', database: 'postgresql' });
+  res.json({ 
+    status: 'ok', 
+    database: 'postgresql',
+    sessionSecret: process.env.SESSION_SECRET ? 'set' : 'not set',
+    nodeEnv: process.env.NODE_ENV
+  });
 });
 
 // Serve frontend in production
