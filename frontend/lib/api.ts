@@ -93,7 +93,7 @@ class API {
   }
   
   async getStats() {
-    return this.request('/api/stats');
+    return this.request('/api/jobs/stats');
   }
 }
 

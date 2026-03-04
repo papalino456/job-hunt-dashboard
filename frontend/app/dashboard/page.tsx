@@ -6,7 +6,7 @@ import { api, Job } from '@/lib/api';
 import PipelineBoard from '@/components/PipelineBoard';
 import JobDetailModal from '@/components/JobDetailModal';
 import StatsPanel from '@/components/StatsPanel';
-import { Briefcase, Search, LogOut, Filter, Plus } from 'lucide-react';
+import { Briefcase, Search, LogOut, Filter, Plus, BarChart3 } from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -130,13 +130,23 @@ export default function DashboardPage() {
               </p>
             </div>
             
-            <button
-              onClick={handleLogout}
-              className="btn-secondary flex items-center gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.push('/analytics')}
+                className="btn-secondary flex items-center gap-2"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Analytics
+              </button>
+              
+              <button
+                onClick={handleLogout}
+                className="btn-secondary flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </div>

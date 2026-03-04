@@ -212,7 +212,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Get stats
-router.get('/api/stats', async (req, res) => {
+router.get('/stats', async (req, res) => {
   try {
     const statsByStatus = await db.all(`
       SELECT status, COUNT(*) as count 
@@ -226,16 +226,33 @@ router.get('/api/stats', async (req, res) => {
       GROUP BY priority
     `);
     
+    const statsByResearch = await db.all(`
+      SELECT research_status, COUNT(*) as count 
+      FROM jobs 
+      GROUP BY research_status
+    `);
+    
     const recent = await db.get(`
       SELECT COUNT(*) as count 
       FROM jobs 
       WHERE date_discovered >= CURRENT_DATE - INTERVAL '7 days'
     `);
     
+    const total = await db.get(`
+      SELECT COUNT(*) as count FROM jobs
+    `);
+    
+    const readyToApply = await db.get(`
+      SELECT COUNT(*) as count FROM jobs WHERE status = 'ready'
+    `);
+    
     res.json({
-      byStatus: statsByStatus,
-      byPriority: statsByPriority,
-      recentApplications: parseInt(recent.count)
+      total: parseInt(total.count),
+      byStatus: statsByStatus.reduce((acc, row) => ({ ...acc, [row.status]: parseInt(row.count) }), {}),
+      byPriority: statsByPriority.reduce((acc, row) => ({ ...acc, [row.priority]: parseInt(row.count) }), {}),
+      byResearch: statsByResearch.reduce((acc, row) => ({ ...acc, [row.research_status]: parseInt(row.count) }), {}),
+      recentApplications: parseInt(recent.count),
+      readyToApply: parseInt(readyToApply.count)
     });
   } catch (error) {
     console.error('Error fetching stats:', error);
