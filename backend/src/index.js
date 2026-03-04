@@ -18,6 +18,9 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Trust proxy (needed for Render)
+app.set('trust proxy', 1);
+
 // CORS - allow same-origin and configured frontend URL
 const allowedOrigins = [
   'http://localhost:3000',
