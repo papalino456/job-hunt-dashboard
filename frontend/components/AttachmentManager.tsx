@@ -70,7 +70,8 @@ export default function AttachmentManager({ jobId }: AttachmentManagerProps) {
     setError('');
 
     try {
-      for (const file of files) {
+      const fileArray = Array.from(files);
+      for (const file of fileArray) {
         await api.uploadAttachment(jobId, file, 'other');
       }
       await loadAttachments();
