@@ -64,8 +64,8 @@ app.use(session({
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/jobs', jobRoutes);
-app.use('/api/jobs', attachmentRoutes);
+app.use('/api/jobs', attachmentRoutes);  // Mount attachments FIRST (more specific routes)
+app.use('/api/jobs', jobRoutes);         // Then general job routes
 
 // Health check
 app.get('/health', (req, res) => {
