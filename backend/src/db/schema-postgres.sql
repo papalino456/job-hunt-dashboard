@@ -38,3 +38,21 @@ CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_priority ON jobs(priority);
 CREATE INDEX IF NOT EXISTS idx_jobs_deadline ON jobs(deadline);
 CREATE INDEX IF NOT EXISTS idx_jobs_company ON jobs(company);
+
+-- Attachments table for job-related files (CVs, cover letters, etc.)
+CREATE TABLE IF NOT EXISTS attachments (
+  id TEXT PRIMARY KEY,
+  job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  filename TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  file_size INTEGER NOT NULL,
+  file_path TEXT NOT NULL,
+  type TEXT DEFAULT 'other', -- cv, cover_letter, offer, other
+  description TEXT DEFAULT '',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_attachments_job_id ON attachments(job_id);
+CREATE INDEX IF NOT EXISTS idx_attachments_type ON attachments(type);

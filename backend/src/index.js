@@ -7,6 +7,7 @@ import { dirname, join } from 'path';
 import { existsSync } from 'fs';
 import authRoutes from './routes/auth.js';
 import jobRoutes from './routes/jobs.js';
+import attachmentRoutes from './routes/attachments.js';
 import './db/database-postgres.js'; // Initialize PostgreSQL connection
 
 dotenv.config();
@@ -64,6 +65,7 @@ app.use(session({
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use('/api/jobs', attachmentRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Job } from '@/lib/api';
 import { X, Building2, MapPin, Link2, Calendar, DollarSign, Tag, FileText, Trash2, Save } from 'lucide-react';
+import AttachmentManager from './AttachmentManager';
 
 interface JobDetailModalProps {
   job: Job;
@@ -200,6 +201,11 @@ export default function JobDetailModal({ job, onClose, onSave, onDelete }: JobDe
                 className={`${inputClass} pl-10 pt-2 font-mono text-sm resize-none`}
               />
             </div>
+          </div>
+
+          {/* Attachments */}
+          <div className="border-t border-steel-800/60 pt-5">
+            <AttachmentManager jobId={job.id} />
           </div>
           
           {/* Actions */}

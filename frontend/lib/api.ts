@@ -24,6 +24,18 @@ export interface Job {
   tags: string[];
 }
 
+export interface Attachment {
+  id: string;
+  job_id: string;
+  filename: string;
+  original_name: string;
+  mime_type: string;
+  file_size: number;
+  type: 'cv' | 'cover_letter' | 'offer' | 'other';
+  description: string;
+  created_at: string;
+}
+
 class API {
   private async request(path: string, options: RequestInit = {}) {
     const res = await fetch(`${API_BASE}${path}`, {
@@ -94,6 +106,50 @@ class API {
   
   async getStats() {
     return this.request('/api/jobs/stats');
+  }
+  
+  // Attachments
+  async getAttachments(jobId: string) {
+    return this.request(`/api/jobs/${jobId}/attachments`);
+  }
+  
+  async uploadAttachment(jobId: string, file: File, type: string = 'other', description: string = '') {
+    const formData = new FormData();
+    formData.append('files', file);
+    formData.append('type', type);
+    formData.append('description', description);
+    
+    const res = await fetch(`${API_BASE}/api/jobs/${jobId}/attachments`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(error.error || 'Upload failed');
+    }
+    
+    return res.json();
+  }
+  
+  async updateAttachment(attachmentId: string, updates: { type?: string; description?: string }) {
+    return this.request(`/api/jobs/attachments/${attachmentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+  
+  async deleteAttachment(attachmentId: string) {
+    return this.request(`/api/jobs/attachments/${attachmentId}`, { method: 'DELETE' });
+  }
+  
+  getAttachmentDownloadUrl(attachmentId: string) {
+    return `${API_BASE}/api/jobs/attachments/${attachmentId}/download`;
+  }
+  
+  getAttachmentViewUrl(attachmentId: string) {
+    return `${API_BASE}/api/jobs/attachments/${attachmentId}/view`;
   }
 }
 
