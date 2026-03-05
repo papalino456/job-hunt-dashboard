@@ -40,6 +40,7 @@ CREATE INDEX IF NOT EXISTS idx_jobs_deadline ON jobs(deadline);
 CREATE INDEX IF NOT EXISTS idx_jobs_company ON jobs(company);
 
 -- Attachments table for job-related files (CVs, cover letters, etc.)
+-- File content is stored directly in Postgres as BYTEA for persistence.
 CREATE TABLE IF NOT EXISTS attachments (
   id TEXT PRIMARY KEY,
   job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
@@ -47,8 +48,9 @@ CREATE TABLE IF NOT EXISTS attachments (
   original_name TEXT NOT NULL,
   mime_type TEXT NOT NULL,
   file_size INTEGER NOT NULL,
-  file_path TEXT NOT NULL,
-  type TEXT DEFAULT 'other', -- cv, cover_letter, offer, other
+  file_data BYTEA,            -- binary file content stored in DB
+  file_path TEXT,             -- legacy: nullable, kept for backward compat
+  type TEXT DEFAULT 'other',  -- cv, cover_letter, offer, other
   description TEXT DEFAULT '',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

@@ -32,7 +32,7 @@ function buildWhereClause(conditions) {
 
 // Get all jobs with optional filters
 router.get('/', async (req, res) => {
-  const { status, priority, search } = req.query;
+  const { status, priority, search, limit, offset } = req.query;
   
   let query = 'SELECT * FROM jobs WHERE 1=1';
   const params = [];
@@ -57,6 +57,18 @@ router.get('/', async (req, res) => {
   }
   
   query += ' ORDER BY created_at DESC';
+  
+  if (limit !== undefined) {
+    const limitVal = Math.min(Math.max(parseInt(limit) || 50, 1), 500);
+    query += ` LIMIT $${idx}`;
+    params.push(limitVal);
+    idx++;
+    
+    const offsetVal = Math.max(parseInt(offset) || 0, 0);
+    query += ` OFFSET $${idx}`;
+    params.push(offsetVal);
+    idx++;
+  }
   
   try {
     const jobs = await db.all(query, params);

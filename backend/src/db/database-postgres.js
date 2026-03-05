@@ -1,5 +1,5 @@
 import pg from 'pg';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -16,19 +16,55 @@ const pool = new Pool({
 
 // Test connection and initialize
 async function initDatabase() {
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
     console.log('✅ Connected to PostgreSQL');
     
-    // Run schema
+    // Apply base schema (idempotent - CREATE TABLE IF NOT EXISTS)
     const schema = readFileSync(join(__dirname, 'schema-postgres.sql'), 'utf8');
     await client.query(schema);
     console.log('✅ Database schema initialized');
+
+    // Run migrations
+    await runMigrations(client);
     
-    client.release();
   } catch (err) {
     console.error('❌ Database initialization failed:', err);
     process.exit(1);
+  } finally {
+    client.release();
+  }
+}
+
+async function runMigrations(client) {
+  // Ensure migrations tracking table exists
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  const migrationsDir = join(__dirname, 'migrations');
+  let files;
+  try {
+    files = readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
+  } catch {
+    return; // No migrations directory yet
+  }
+
+  for (const file of files) {
+    const { rows } = await client.query(
+      'SELECT 1 FROM schema_migrations WHERE name = $1', [file]
+    );
+    if (rows.length > 0) continue;
+
+    console.log(`⏳ Running migration: ${file}`);
+    const sql = readFileSync(join(migrationsDir, file), 'utf8');
+    await client.query(sql);
+    await client.query('INSERT INTO schema_migrations (name) VALUES ($1)', [file]);
+    console.log(`✅ Migration applied: ${file}`);
   }
 }
 
