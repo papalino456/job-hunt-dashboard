@@ -63,7 +63,7 @@ export default function AnalyticsPage() {
 
       const [statsData, jobsData] = await Promise.all([
         api.getStats(),
-        api.getJobs({ limit: 200 })
+        api.getJobs()
       ]);
 
       setStats(statsData);
