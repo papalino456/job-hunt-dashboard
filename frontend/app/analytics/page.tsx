@@ -33,6 +33,7 @@ interface Job {
   company: string;
   role: string;
   location: string;
+  posting_url: string;
   status: string;
   priority: string;
   research_status: string;
