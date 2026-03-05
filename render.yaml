@@ -13,10 +13,10 @@ services:
     buildCommand: |
       export NODE_OPTIONS="--max-old-space-size=409" && \
       export NEXT_PUBLIC_API_URL="" && \
-      cd frontend && rm -rf .next dist node_modules package-lock.json && \
-      npm ci --production=false --no-audit && \
+      cd frontend && rm -rf .next dist node_modules && \
+      npm install --no-audit && \
       npm run build && \
-      cd ../backend && npm ci --production --no-audit
+      cd ../backend && npm install --production --no-audit
     startCommand: cd backend && npm start
     envVars:
       - key: NODE_VERSION
